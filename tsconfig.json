@@ -12,7 +12,8 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "types": [
-      "jasmine"
+      "jasmine",
+      "cannon"
     ]
   },
   "include": [
