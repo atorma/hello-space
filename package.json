@@ -5,6 +5,7 @@
   "main": "index.ts",
   "scripts": {
     "build": "webpack --config webpack.config.js",
+    "watch": "webpack --config webpack.config.js --watch",
     "test": "karma start karma.config.js"
   },
   "author": "",
