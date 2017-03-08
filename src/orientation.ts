@@ -1,23 +1,17 @@
 import {Vec3, Quaternion} from 'cannon';
 
+/**
+ * Describes a rotation. In this convention, the rotation axes are as in http://www.euclideanspace.com/maths/standards/index.htm
+ *
+ * * roll:  x-axis, bank
+ * * pitch: y-axis, heading
+ * * yaw:   z-axis, attitude
+ */
 export class RPYAngles {
     constructor(readonly roll: number, readonly pitch: number, readonly yaw: number) {}
 }
 
-/**
- * Computes the roll, pitch, and yaw angles to a vector that is in
- * the rocket's body coordinates. The resulting rotation aligns
- * the rocket's nose direction with the target vector.
- *
- * @param bodyVector
- * @return {RPYAngles}
- */
-export function getRPYAnglesToBodyVector(bodyVector: Vec3): RPYAngles {
-    const rocketNose = new Vec3(1, 0, 0);
-    const rotation = new Quaternion();
-    rotation.setFromVectors(bodyVector, rocketNose);
-    return convertQuaternionToRPYAngles(rotation);
-}
+const ROCKET_NOSE_BODY_Q: Quaternion = new Quaternion(1, 0, 0, 0);
 
 /**
  * Converts a quaternion to roll, pitch, and yaw angles. The
@@ -30,4 +24,21 @@ export function convertQuaternionToRPYAngles(quaternion: Quaternion): RPYAngles 
     const eulerAngles = new Vec3();
     quaternion.toEuler(eulerAngles);
     return new RPYAngles(eulerAngles.x, eulerAngles.y, eulerAngles.z);
+}
+
+/**
+ * Calculates a rotation of the rocket that orients the rocket's nose to
+ * a point in the world's coordinates.
+ *
+ * @param rocketsCurrentOrientation
+ * @param worldPoint
+ * @return {RPYAngles}
+ */
+export function getRocketRPYToWorldPoint(rocketsCurrentOrientation: Quaternion, worldPoint: Vec3): RPYAngles {
+    const rocketNoseRotationInWorld: Quaternion = rocketsCurrentOrientation.mult(ROCKET_NOSE_BODY_Q).mult(rocketsCurrentOrientation.inverse());
+    const rocketNoseVectorInWorld = new Vec3(rocketNoseRotationInWorld.x, rocketNoseRotationInWorld.y, rocketNoseRotationInWorld.z);
+
+    const rotationChange = new Quaternion();
+    rotationChange.setFromVectors(rocketNoseVectorInWorld, worldPoint);
+    return convertQuaternionToRPYAngles(rotationChange);
 }
