@@ -26,9 +26,9 @@ describe('convertQuaternionToRPYAngles()', () => {
 
         q.set(0.449, 0.184, 0.761, 0.432);
         a = o.convertQuaternionToRPYAngles(q);
-        expect(a.roll).toBeCloseTo(2.951, 0.001);
-        expect(a.pitch).toBeCloseTo(-1.976, 0.001);
-        expect(a.yaw).toBeCloseTo(0.964, 0.001);
+        expect(a.roll).toBeCloseTo(2.951, 2);
+        expect(a.pitch).toBeCloseTo(-1.976, 2);
+        expect(a.yaw).toBeCloseTo(0.964, 2);
     });
 
 });
@@ -45,7 +45,7 @@ describe('getRocketRPYToWorldPoint()', () => {
         change = o.getRocketRPYToWorldPoint(current, target);
         expect(change.roll).toBe(0);
         expect(change.pitch).toBe(0);
-        expect(change.yaw).toBeCloseTo(Math.PI / 4, 0.0001);
+        expect(change.yaw).toBeCloseTo(Math.PI / 4, 4);
 
         current = new Quaternion(0, Math.pow(2, -0.5), 0, Math.pow(2, -0.5)); // Rotated 90 degrees CW around y-axis
         target = new Vec3(1, 1, 0); // 45 degrees "up" from world x-axis, right and up in body coordinates
@@ -60,7 +60,7 @@ describe('getRocketRPYToWorldPoint()', () => {
         // TODO This is the same as above because taking rocket's nose as a Vec3 "forgets" how it has been rotated around the nose axis. This does not seem right.
         expect(change.roll).toBe(0);
         expect(change.pitch).toBe(0);
-        expect(change.yaw).toBeCloseTo(Math.PI / 4, 0.0001);
+        expect(change.yaw).toBeCloseTo(Math.PI / 4, 4);
     });
 
 });

@@ -30,21 +30,19 @@ describe('Rocket rcs controls', () => {
         for (let i = 0; i < 10; i++) {
             state = RunPhysics(state, controls);
             const angularVelocity: Vec3 = state.rocket.angularVelocity;
-            const rotation: Quaternion = state.rocket.rotation;
-
             expect(angularVelocity.x).toBeGreaterThan(0);
             expect(angularVelocity.y).toBeGreaterThan(0);
             expect(angularVelocity.z).toBeGreaterThan(0);
             expect(angularVelocity.x).toBe(angularVelocity.y);
             expect(angularVelocity.x).toBe(angularVelocity.z);
-
-            const rpyAngles: RPYAngles = o.convertQuaternionToRPYAngles(rotation);
-            expect(rpyAngles.roll).toBeGreaterThan(0);
-            expect(rpyAngles.pitch).toBeGreaterThan(0);
-            expect(rpyAngles.yaw).toBeGreaterThan(0);
-            expect(rpyAngles.roll).toBeCloseTo(rpyAngles.pitch, 0.0001);
-            expect(rpyAngles.roll).toBeCloseTo(rpyAngles.yaw, 0.0001);
         }
+
+        const rpyAngles: RPYAngles = o.convertQuaternionToRPYAngles(state.rocket.rotation);
+        expect(rpyAngles.roll).toBeGreaterThan(0);
+        expect(rpyAngles.pitch).toBeGreaterThan(0);
+        expect(rpyAngles.yaw).toBeGreaterThan(0);
+        expect(rpyAngles.roll).toBeCloseTo(rpyAngles.pitch, 4);
+        expect(rpyAngles.roll).toBeCloseTo(rpyAngles.yaw, 2);
     });
 
     it('directly affects angular velocity component in a non-rotating frame fixed to the rocket (instead of affecting in rotated coordinates like aircraft control forces)', () => {
@@ -86,7 +84,7 @@ describe('Rocket rcs controls', () => {
         state = new WorldState(rocketState, []);
         rpyAngles = o.convertQuaternionToRPYAngles(state.rocket.rotation);
         expect(rpyAngles.roll).toBe(0);
-        expect(rpyAngles.pitch).toBeCloseTo(Math.PI / 4, 0.000001);
+        expect(rpyAngles.pitch).toBeCloseTo(Math.PI / 4, 6);
         expect(rpyAngles.yaw).toBe(0);
         controls = new Controls({rcs: {yaw: 1}});
         for (let i = 0; i < 30; i++) {
@@ -112,7 +110,7 @@ describe('Rocket rcs controls', () => {
         rpyAngles = o.convertQuaternionToRPYAngles(rotation);
         expect(rpyAngles.roll).toBe(0);
         expect(rpyAngles.pitch).toBe(0);
-        expect(rpyAngles.yaw).toBeCloseTo(Math.PI / 4, 0.000001);
+        expect(rpyAngles.yaw).toBeCloseTo(Math.PI / 4, 6);
         controls = new Controls({rcs: {roll: 1}});
         for (let i = 0; i < 30; i++) {
             previousRpyAngles = rpyAngles;
@@ -134,7 +132,7 @@ describe('Rocket rcs controls', () => {
         state = new WorldState(rocketState, []);
         rotation = state.rocket.rotation;
         rpyAngles = o.convertQuaternionToRPYAngles(rotation);
-        expect(rpyAngles.roll).toBeCloseTo(Math.PI / 4, 0.000001);
+        expect(rpyAngles.roll).toBeCloseTo(Math.PI / 4, 6);
         expect(rpyAngles.pitch).toBe(0);
         expect(rpyAngles.yaw).toBe(0);
         controls = new Controls({rcs: {yaw: 1}});
@@ -142,8 +140,8 @@ describe('Rocket rcs controls', () => {
             previousRpyAngles = rpyAngles;
             state = RunPhysics(state, controls);
             rpyAngles = o.convertQuaternionToRPYAngles(state.rocket.rotation);
-            expect(rpyAngles.roll).toBeCloseTo(previousRpyAngles.roll, 1e-15);
-            expect(rpyAngles.pitch).toBeCloseTo(previousRpyAngles.pitch, 1e-15);
+            expect(rpyAngles.roll).toBeCloseTo(previousRpyAngles.roll, 15);
+            expect(rpyAngles.pitch).toBeCloseTo(previousRpyAngles.pitch, 15);
             expect(rpyAngles.yaw).toBeGreaterThan(previousRpyAngles.yaw + 0.0001);
         }
     });
