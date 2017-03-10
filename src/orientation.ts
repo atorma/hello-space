@@ -27,6 +27,19 @@ export function convertQuaternionToRPYAngles(quaternion: Quaternion): RPYAngles 
 }
 
 /**
+ * Returns a vector whose direction is the rocket's nose's direction (thrust direction)
+ * in the world frame.
+ *
+ * @param rocketsCurrentOrientation
+ * @return {Vec3}
+ */
+export function getRocketNoseDirection(rocketsCurrentOrientation: Quaternion): Vec3 {
+    const rocketNoseRotationInWorld: Quaternion = rocketsCurrentOrientation.mult(ROCKET_NOSE_BODY_Q).mult(rocketsCurrentOrientation.inverse());
+    return new Vec3(rocketNoseRotationInWorld.x, rocketNoseRotationInWorld.y, rocketNoseRotationInWorld.z);
+}
+
+
+/**
  * Calculates a rotation of the rocket that orients the rocket's nose to
  * a point in the world's coordinates.
  *

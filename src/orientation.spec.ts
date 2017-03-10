@@ -33,6 +33,49 @@ describe('convertQuaternionToRPYAngles()', () => {
 
 });
 
+describe('getRocketNoseDirection()', () => {
+
+    it('computes a vector whose direction is the rocket\'s nose (thrust) direction in the world frame', () => {
+        let orientation: Quaternion;
+        let noseDirection: Vec3;
+        let expectedDirection: Vec3;
+
+        // No rotation
+        orientation = new Quaternion();
+        orientation.setFromAxisAngle(new Vec3(1, 0, 0), 0);
+        expectedDirection = new Vec3(1, 0, 0);
+        noseDirection = o.getRocketNoseDirection(orientation);
+        expect(noseDirection).toEqual(expectedDirection);
+
+        // Rotation around x-axis only does not change the rocket's orientation
+        orientation = new Quaternion();
+        orientation.setFromAxisAngle(new Vec3(1, 0, 0), 1.5);
+        expectedDirection = new Vec3(1, 0, 0);
+        noseDirection = o.getRocketNoseDirection(orientation);
+        expect(noseDirection).toEqual(expectedDirection);
+
+        // 90 deg rotation around y-axis
+        orientation = new Quaternion();
+        orientation.setFromAxisAngle(new Vec3(0, 1, 0), Math.PI / 2);
+        expectedDirection = new Vec3(0, 0, -1);
+        noseDirection = o.getRocketNoseDirection(orientation);
+        expect(noseDirection.x).toBeCloseTo(expectedDirection.x, 15);
+        expect(noseDirection.y).toBeCloseTo(expectedDirection.y, 15);
+        expect(noseDirection.z).toBeCloseTo(expectedDirection.z, 15);
+
+        expectedDirection = new Vec3(1, 1, -1);
+        orientation = new Quaternion();
+        orientation.setFromVectors(new Vec3(1, 0, 0), expectedDirection);
+        noseDirection = o.getRocketNoseDirection(orientation);
+        expectedDirection.normalize();
+        expect(noseDirection.dot(expectedDirection)).toBeCloseTo(1, 15);
+        expect(noseDirection.x).toBeCloseTo(expectedDirection.x, 15);
+        expect(noseDirection.y).toBeCloseTo(expectedDirection.y, 15);
+        expect(noseDirection.z).toBeCloseTo(expectedDirection.z, 15);
+    });
+
+});
+
 describe('getRocketRPYToWorldPoint()', () => {
 
     xit('computes RPY angles that orient the rocket from its current rotation to a target world point', () => {
