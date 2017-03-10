@@ -11,9 +11,9 @@ enum TargetType {
 }
 
 export interface RcsControlParams {
-    roll?: number;
-    pitch?: number;
-    yaw?: number;
+    roll: number;
+    pitch: number;
+    yaw: number;
 }
 
 export class RotationController {
@@ -29,6 +29,13 @@ export class RotationController {
 
     constructor() {}
 
+    /**
+     * Computes rocket rcs parameters using the current target:
+     * angular velocity, orientation, or none.
+     *
+     * @param rocketState
+     * @return {RcsControlParams}
+     */
     update(rocketState: RocketState): RcsControlParams {
         const rcsParams: RcsControlParams = {
             roll: 0,
@@ -68,14 +75,19 @@ export class RotationController {
         });
     }
 
-    setAngularVelocityTarget(target: Vec3): void {
-        if (!target) {
+    /**
+     * Sets the given angular velocity as the control target.
+     *
+     * @param angularVelocity
+     */
+    setAngularVelocityTarget(angularVelocity: Vec3): void {
+        if (!angularVelocity) {
             this.targetType = TargetType.none;
             return;
         }
 
         this.targetType = TargetType.angularVelocity;
-        this.setAngularVelocityPidTarget(target);
+        this.setAngularVelocityPidTarget(angularVelocity);
     }
 
     private setAngularVelocityPidTarget(target: Vec3): void {
@@ -84,13 +96,18 @@ export class RotationController {
         });
     }
 
-    setOrientationTarget(target: Vec3): void {
-        if (!target) {
+    /**
+     * Sets the given orientation direction as the control target.
+     *
+     * @param orientationTarget
+     */
+    setOrientationTarget(orientationTarget: Vec3): void {
+        if (!orientationTarget) {
             this.targetType = TargetType.none;
             return;
         }
 
         this.targetType = TargetType.orientation;
-        this.orientationTarget = target.clone();
+        this.orientationTarget = orientationTarget.clone();
     }
 }
