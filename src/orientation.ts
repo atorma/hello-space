@@ -37,21 +37,3 @@ export function getRocketNoseDirection(rocketsCurrentOrientation: Quaternion): V
     const rocketNoseRotationInWorld: Quaternion = rocketsCurrentOrientation.mult(ROCKET_NOSE_BODY_Q).mult(rocketsCurrentOrientation.inverse());
     return new Vec3(rocketNoseRotationInWorld.x, rocketNoseRotationInWorld.y, rocketNoseRotationInWorld.z);
 }
-
-
-/**
- * Calculates a rotation of the rocket that orients the rocket's nose to
- * a point in the world's coordinates.
- *
- * @param rocketsCurrentOrientation
- * @param worldPoint
- * @return {RPYAngles}
- */
-export function getRocketRPYToWorldPoint(rocketsCurrentOrientation: Quaternion, worldPoint: Vec3): RPYAngles {
-    const rocketNoseRotationInWorld: Quaternion = rocketsCurrentOrientation.mult(ROCKET_NOSE_BODY_Q).mult(rocketsCurrentOrientation.inverse());
-    const rocketNoseVectorInWorld = new Vec3(rocketNoseRotationInWorld.x, rocketNoseRotationInWorld.y, rocketNoseRotationInWorld.z);
-
-    const rotationChange = new Quaternion();
-    rotationChange.setFromVectors(rocketNoseVectorInWorld, worldPoint);
-    return convertQuaternionToRPYAngles(rotationChange);
-}
