@@ -1,7 +1,7 @@
 import {PIDController, AngularPIDController} from "./external/pid_controller";
 import {RocketState} from "./external/physics";
 import {Vec3, Quaternion} from 'cannon';
-import {ROTATION_TO_CARTESIAN_AXIS} from "./constants";
+import {ROTATION_TO_CARTESIAN_AXIS} from "./control_constants";
 import {getRocketNoseDirection} from "./orientation";
 
 enum TargetType {

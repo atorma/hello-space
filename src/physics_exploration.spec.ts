@@ -1,21 +1,10 @@
 import {WorldState, PlanetState} from "./external/physics";
 import {InitialState} from "./external/initialstate"
-import {Vec3, Body, Sphere} from 'cannon';
+import {Vec3} from 'cannon';
 import {Gravitation} from "./external/formulas";
+import {createPlanetRigidBody} from "./helpers.spec";
 
 describe('Initial state', () => {
-
-    function createPlanetRigidBody(planet: PlanetState): Body {
-        return new Body({
-            name: planet.name,
-            mass: planet.mass,
-            position: planet.position,
-            velocity: planet.velocity,
-            shape: new Sphere(planet.radius),
-            linearDamping: 0,
-            angularDamping: 0
-        });
-    }
 
     it('has the moon in circular motion around the earth', () => {
         const worldState: WorldState = InitialState.create();

@@ -1,7 +1,7 @@
-import {WorldState, Controls, ControlParams, RocketState, PlanetState} from './external/physics';
-import {Vec3} from 'cannon';
+import {WorldState, Controls, ControlParams, RocketState, PlanetState} from "./external/physics";
+import {Vec3} from "cannon";
 import {RotationController} from "./rcs_pid_control";
-
+import {TargetController} from "./target_controller";
 
 const CONTROL_NAMES = {
     PITCH_UP: 'PITCH_UP',
@@ -16,13 +16,15 @@ const KEY_CODE_TO_MANUAL_CONTROL = {};
 const KEY_CODE_TO_AUTO_CONTROL = {};
 
 const rotationController: RotationController = new RotationController();
+const targetController: TargetController = new TargetController();
 
 let controlState = {
     active: {}
 };
 
-let rocketState: RocketState;
-let moonState: PlanetState;
+let rocket: RocketState;
+let moon: PlanetState;
+let earth: PlanetState;
 
 
 initControls();
@@ -31,13 +33,23 @@ initControls();
 
 export function goToMoon(worldState): Controls {
     updateWorldStates(worldState);
-    return new Controls(getControlParams());
+
+    if (rocket.position.distanceTo(earth.position) + earth.radius < 50) {
+        return new Controls({thrust: 1});
+    } else {
+        targetController.setTarget(moon.position, moon.velocity.norm() + 2);
+        return new Controls(targetController.update(rocket));
+    }
+
 }
 
 function updateWorldStates(worldState: WorldState): void {
-    rocketState = worldState.rocket;
-    moonState = worldState.planetStates.find(function (ps) {
+    rocket = worldState.rocket;
+    moon = worldState.planetStates.find(function (ps) {
         return ps.name === 'Moon';
+    });
+    earth = worldState.planetStates.find(function (ps) {
+        return ps.name === 'Earth2';
     });
 }
 
@@ -52,14 +64,13 @@ function getControlParams(): ControlParams {
         }
     };
 
-
     if (controlState.active[CONTROL_NAMES.ORIENT_TO_MOON]) {
-        const moonDirection: Vec3 = moonState.position.vsub(rocketState.position);
+        const moonDirection: Vec3 = moon.position.vsub(rocket.position);
         rotationController.setOrientationTarget(moonDirection);
     } else if (controlState.active[CONTROL_NAMES.STABILIZE_ROTATION]) {
         rotationController.setAngularVelocityTarget(new Vec3(0, 0, 0));
     }
-    controlParams.rcs = rotationController.update(rocketState);
+    controlParams.rcs = rotationController.update(rocket);
 
     applyManualControlParams(controlParams);
 
