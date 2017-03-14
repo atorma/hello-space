@@ -1,6 +1,6 @@
 import {Quaternion, Vec3} from 'cannon';
 import {rocketSize} from './external/constants';
-import {getRocketNoseDirection, convertQuaternionToRPYAngles} from "./orientation";
+import {getRocketNoseDirection, convertQuaternionToRPYAngles, getReflection, getAngleBetween} from "./orientation";
 import {RPYAngles} from "./orientation";
 
 describe('convertQuaternionToRPYAngles()', () => {
@@ -70,6 +70,54 @@ describe('getRocketNoseDirection()', () => {
         expect(noseDirection.x).toBeCloseTo(expectedDirection.x, 15);
         expect(noseDirection.y).toBeCloseTo(expectedDirection.y, 15);
         expect(noseDirection.z).toBeCloseTo(expectedDirection.z, 15);
+    });
+
+});
+
+describe('getReflection()', () => {
+
+    it('computes the reflection of vector from a plane', () => {
+        let normal: Vec3, vec: Vec3;
+        normal = new Vec3(0, 1, 0);
+
+        vec = new Vec3(0, -2, 0);
+        expect(getReflection(vec, normal)).toEqual(new Vec3(0, 2, 0));
+
+        vec = new Vec3(0, 2, 0);
+        expect(getReflection(vec, normal)).toEqual(new Vec3(0, -2, 0));
+
+        vec = new Vec3(-1, -2, 0);
+        expect(getReflection(vec, normal)).toEqual(new Vec3(-1, 2, 0));
+
+        vec = new Vec3(1, 2, 0);
+        expect(getReflection(vec, normal)).toEqual(new Vec3(1, -2, 0));
+
+        vec = new Vec3(1, -2, 0);
+        expect(getReflection(vec, normal)).toEqual(new Vec3(1, 2, 0));
+    });
+
+});
+
+describe('getAngleBetween()', () => {
+
+    it('computes the angle between two vectors', () => {
+        let vec1: Vec3, vec2: Vec3;
+
+        vec1 = new Vec3(1, 1, 0);
+        vec2 = new Vec3(-1, 1, 0);
+        expect(getAngleBetween(vec1, vec2)).toBeCloseTo(Math.PI/2, 15);
+
+        vec1 = new Vec3(1, 1, 0);
+        vec2 = new Vec3(0, 1, 0);
+        expect(getAngleBetween(vec1, vec2)).toBeCloseTo(Math.PI/4, 15);
+
+        vec1 = new Vec3(1, 1, 0);
+        vec2 = new Vec3(1, 0, 0);
+        expect(getAngleBetween(vec1, vec2)).toBeCloseTo(Math.PI/4, 15);
+
+        vec1 = new Vec3(1, -1, 0);
+        vec2 = new Vec3(0, 1, 0);
+        expect(getAngleBetween(vec1, vec2)).toBeCloseTo(Math.PI/2 + Math.PI/4, 15);
     });
 
 });
