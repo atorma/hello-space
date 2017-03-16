@@ -15,7 +15,8 @@ export interface RocketStateParams {
     fuel?: FuelState
 }
 
-export function createRocketState(params: RocketStateParams): RocketState {
+export function createRocketState(params?: RocketStateParams): RocketState {
+    params = params || {};
     return new RocketState(
         params.mass || 10,
         params.position || new Vec3(20 + rocketSize[0] / 2, 0, 0),

@@ -1,6 +1,9 @@
 import {RunPhysics, Controls, WorldState, ControlParams} from "./external/physics";
 import {InitialState} from "./external/initialstate";
 import {VelocityController} from "./velocity_controller";
+import {Vec3} from "cannon";
+import {createRocketState} from "./helpers.spec";
+import {radiansToDegrees, getAngleRadiansBetween} from "./orientation";
 
 describe('VelocityController', () => {
 
@@ -10,36 +13,22 @@ describe('VelocityController', () => {
         initialState = InitialState.create();
     });
 
-    it('accelerates the rocket to the target velocity maintains the velocity until fuel runs out', () => {
-        let world: WorldState = initialState;
-        const targetVelocity: number = 10;
-        const launchController = new VelocityController(targetVelocity);
-        let velocity: number = world.rocket.velocity.norm();
-        let maxVelocity: number = velocity;
+    it('drives the rocket to the target velocity vector from rest', () => {
+        const targetVelocity: Vec3 = new Vec3(8, 5, 1);
 
-        for (let i = 0; i < 1000; i++) {
-            const controlParams: ControlParams = launchController.update(world.rocket);
+        const controller = new VelocityController();
+        controller.setTarget(targetVelocity);
+
+        let world: WorldState = new WorldState(createRocketState(), []);
+        for (let i = 0; i < 200; i++) {
+            const controlParams: ControlParams = controller.update(world.rocket);
             const controls: Controls = new Controls(controlParams);
             world = RunPhysics(world, controls);
-            const updatedVelocity: number = world.rocket.velocity.norm();
-
-            if (world.rocket.fuel.volume > 0) {
-                if (updatedVelocity < 0.99 * targetVelocity) {
-                    expect(updatedVelocity).toBeGreaterThan(velocity);
-                } else {
-                    expect(updatedVelocity).toBeGreaterThan(0.99 * targetVelocity);
-                    expect(updatedVelocity).toBeLessThan(1.01 * targetVelocity);
-                }
-            }
-
-            velocity = updatedVelocity;
-            if (velocity > maxVelocity) {
-                maxVelocity = velocity;
-            }
         }
 
-        expect(maxVelocity).toBeGreaterThan(0.99 * targetVelocity);
-        expect(maxVelocity).toBeLessThan(1.01 * targetVelocity);
+        expect(world.rocket.velocity.norm()/targetVelocity.norm()).toBeLessThan(1.01);
+        expect(world.rocket.velocity.norm()/targetVelocity.norm()).toBeGreaterThan(0.99);
+        expect(radiansToDegrees(getAngleRadiansBetween(world.rocket.velocity, targetVelocity))).toBeLessThan(1);
     });
 
 });
