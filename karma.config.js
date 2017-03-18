@@ -35,5 +35,8 @@ module.exports = function (config) {
     mime: {
       'text/x-typescript': ['ts', 'tsx']
     },
+    browserDisconnectTimeout: 100000,
+    browserNoActivityTimeout: 100000,
+    captureTimeout: 100000
   });
 };

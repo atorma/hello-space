@@ -1,160 +1,82 @@
-import {WorldState, Controls, ControlParams, RocketState, PlanetState} from "./external/physics";
+import {WorldState, Controls, RocketState, PlanetState, ControlParams} from "./external/physics";
 import {Vec3} from "cannon";
+import {VelocityController} from "./velocity_controller";
 import {RotationController} from "./rcs_pid_control";
-import {TargetController} from "./target_controller";
+import {circularMotion} from "./moon_position";
+import Constants = require("./physical_constants");
 
-const CONTROL_NAMES = {
-    PITCH_UP: 'PITCH_UP',
-    PITCH_DOWN: 'PITCH_DOWN',
-    YAW_LEFT: 'YAW_LEFT',
-    YAW_RIGHT: 'YAW_RIGHT',
-    THRUST: 'THRUST',
-    ORIENT_TO_MOON: 'ORIENT_TO_MOON',
-    STABILIZE_ROTATION: 'STABILIZE_ROTATION'
-};
-const KEY_CODE_TO_MANUAL_CONTROL = {};
-const KEY_CODE_TO_AUTO_CONTROL = {};
-
+const velocityController: VelocityController = new VelocityController();
 const rotationController: RotationController = new RotationController();
-const targetController: TargetController = new TargetController();
 
-let controlState = {
-    active: {}
-};
-
+let world: WorldState;
 let rocket: RocketState;
 let moon: PlanetState;
 let earth: PlanetState;
+let moonDistanceFromEarth: Vec3;
+let moonAngularVelocityAroundEarth: Vec3;
 
-
-initControls();
 
 ////////////// Functions //////////////
 
-export function goToMoon(worldState): Controls {
-    updateWorldStates(worldState);
+export function goToMoon(worldState: WorldState): Controls {
+    world = worldState;
+    updateState();
 
-    if (rocket.position.distanceTo(earth.position) + earth.radius < 50) {
-        return new Controls({thrust: 1});
+    let controlParams: ControlParams = {};
+    let rocketDistanceToEarth: number = rocket.position.distanceTo(earth.position) - earth.radius;
+    if (rocketDistanceToEarth < 4) {
+        controlParams = {thrust: 1};
     } else {
-        targetController.setTarget(moon.position, moon.velocity.norm() + 2);
-        return new Controls(targetController.update(rocket));
+        controlParams = aimAtTheMoon();
     }
 
+    return new Controls(controlParams);
 }
 
-function updateWorldStates(worldState: WorldState): void {
-    rocket = worldState.rocket;
-    moon = worldState.planetStates.find(function (ps) {
-        return ps.name === 'Moon';
-    });
-    earth = worldState.planetStates.find(function (ps) {
-        return ps.name === 'Earth2';
-    });
+function updateState(): void {
+    rocket = world.rocket;
+    moon = world.planetStates.find(p => p.name === 'Moon');
+    earth = world.planetStates.find(p => p.name === 'Earth2');
+
+    // Assuming that the Moon is rotating around the Earth in perfect circular motion
+    moonDistanceFromEarth = moon.position.vsub(earth.position);
+    moonAngularVelocityAroundEarth = moonDistanceFromEarth.cross(moon.velocity).mult(1 / moonDistanceFromEarth.norm2());
 }
 
+function aimAtTheMoon(): ControlParams {
+    const timeStep = 2;
+    let iter: number = 0;
+    let minDistance: number = Infinity;
+    let velocityForMinDistance: Vec3 = rocket.velocity;
 
-function getControlParams(): ControlParams {
-    const controlParams = {
-        thrust: 0,
-        rcs: {
-            roll: 0,
-            pitch: 0,
-            yaw: 0,
+    while (iter < 500) {
+        const time = iter * timeStep;
+        let targetVelocity: Vec3, distance: number;
+        [distance, targetVelocity] = getTargetVelocityAndDistanceToMoon(time);
+
+        if (distance > minDistance) {
+            velocityController.setTarget(velocityForMinDistance);
+            return velocityController.update(rocket);
         }
-    };
 
-    if (controlState.active[CONTROL_NAMES.ORIENT_TO_MOON]) {
-        const moonDirection: Vec3 = moon.position.vsub(rocket.position);
-        rotationController.setOrientationTarget(moonDirection);
-    } else if (controlState.active[CONTROL_NAMES.STABILIZE_ROTATION]) {
-        rotationController.setAngularVelocityTarget(new Vec3(0, 0, 0));
+        minDistance = distance;
+        velocityForMinDistance = targetVelocity;
+        iter = iter + 1;
     }
-    controlParams.rcs = rotationController.update(rocket);
 
-    applyManualControlParams(controlParams);
-
-    return controlParams;
+    throw new Error('Unable to find vector to Moon');
 }
 
+function getTargetVelocityAndDistanceToMoon(time: number): [number, Vec3] {
+    const moonPredictedPositionFromEarth: Vec3 = circularMotion(moonDistanceFromEarth, moonAngularVelocityAroundEarth, time);
+    const moonPredictedPosition: Vec3 = earth.position.vadd(moonPredictedPositionFromEarth);
 
-function applyManualControlParams(controlParams: ControlParams): void {
-    if (controlState.active[CONTROL_NAMES.PITCH_UP]) {
-        controlParams.rcs.pitch = 0.5;
-    }
-    if (controlState.active[CONTROL_NAMES.PITCH_DOWN]) {
-        controlParams.rcs.pitch = -0.5;
-    }
-    if (controlState.active[CONTROL_NAMES.YAW_LEFT]) {
-        controlParams.rcs.yaw = 0.5;
-    }
-    if (controlState.active[CONTROL_NAMES.YAW_RIGHT]) {
-        controlParams.rcs.yaw = -0.5;
-    }
-    if (controlState.active[CONTROL_NAMES.THRUST]) {
-        controlParams.thrust = 1;
-    }
-}
+    const targetDirection = moonPredictedPosition.vsub(rocket.position);
+    targetDirection.normalize();
+    const targetVelocity = targetDirection.mult(moon.velocity.norm() + 10);
 
-function initControls(): void {
-    KEY_CODE_TO_MANUAL_CONTROL['w'] = CONTROL_NAMES.YAW_LEFT;
-    KEY_CODE_TO_MANUAL_CONTROL[87] = CONTROL_NAMES.YAW_LEFT;
-    KEY_CODE_TO_MANUAL_CONTROL['s'] = CONTROL_NAMES.YAW_RIGHT;
-    KEY_CODE_TO_MANUAL_CONTROL[83] = CONTROL_NAMES.YAW_RIGHT;
-    KEY_CODE_TO_MANUAL_CONTROL['a'] = CONTROL_NAMES.PITCH_UP;
-    KEY_CODE_TO_MANUAL_CONTROL[65] = CONTROL_NAMES.PITCH_UP;
-    KEY_CODE_TO_MANUAL_CONTROL['d'] = CONTROL_NAMES.PITCH_DOWN;
-    KEY_CODE_TO_MANUAL_CONTROL[68] = CONTROL_NAMES.PITCH_DOWN;
-    KEY_CODE_TO_MANUAL_CONTROL['k'] = CONTROL_NAMES.THRUST;
-    KEY_CODE_TO_MANUAL_CONTROL[75] = CONTROL_NAMES.THRUST;
+    const rocketPosition: Vec3 = rocket.position.vadd(targetVelocity.mult(time));
+    const distanceToMoon = moonPredictedPosition.vsub(rocketPosition).norm();
 
-    KEY_CODE_TO_AUTO_CONTROL['o'] = CONTROL_NAMES.ORIENT_TO_MOON;
-    KEY_CODE_TO_AUTO_CONTROL[79] = CONTROL_NAMES.ORIENT_TO_MOON;
-    KEY_CODE_TO_AUTO_CONTROL['l'] = CONTROL_NAMES.STABILIZE_ROTATION;
-    KEY_CODE_TO_AUTO_CONTROL[77] = CONTROL_NAMES.STABILIZE_ROTATION;
-
-    Object.keys(CONTROL_NAMES).forEach(function (control) {
-        controlState.active[CONTROL_NAMES[control]] = false;
-    });
-    controlState.active[CONTROL_NAMES.STABILIZE_ROTATION] = true;
-
-    document.addEventListener('keydown', activateManualControl);
-    document.addEventListener('keyup', deactivateManualControl);
-    document.addEventListener('keypress', toggleAutoControl);
-}
-
-function activateManualControl(event: KeyboardEvent): void {
-    const controlName = KEY_CODE_TO_MANUAL_CONTROL[event.key] || KEY_CODE_TO_MANUAL_CONTROL[event.keyCode];
-
-    if (!controlName) return;
-
-    controlState.active[controlName] = true;
-
-    switch (controlName) {
-        case CONTROL_NAMES.PITCH_UP:
-            controlState.active[CONTROL_NAMES.PITCH_DOWN] = false;
-            break;
-        case CONTROL_NAMES.PITCH_DOWN:
-            controlState.active[CONTROL_NAMES.PITCH_UP] = false;
-            break;
-        case CONTROL_NAMES.YAW_LEFT:
-            controlState.active[CONTROL_NAMES.YAW_RIGHT] = false;
-            break;
-        case CONTROL_NAMES.YAW_RIGHT:
-            controlState.active[CONTROL_NAMES.YAW_LEFT] = false;
-            break;
-    }
-}
-
-function deactivateManualControl(event: KeyboardEvent): void {
-    const controlName = KEY_CODE_TO_MANUAL_CONTROL[event.key] || KEY_CODE_TO_MANUAL_CONTROL[event.keyCode];
-    controlState.active[controlName] = false;
-}
-
-function toggleAutoControl(event: KeyboardEvent): void {
-    const controlName = KEY_CODE_TO_AUTO_CONTROL[event.key] || KEY_CODE_TO_AUTO_CONTROL[event.keyCode];
-
-    if (!controlName) return;
-
-    controlState.active[controlName] = !controlState.active[controlName];
+    return [distanceToMoon, targetVelocity];
 }

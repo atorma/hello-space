@@ -11,7 +11,7 @@ export class RPYAngles {
     constructor(readonly roll: number, readonly pitch: number, readonly yaw: number) {}
 }
 
-const ROCKET_NOSE_BODY_Q: Quaternion = new Quaternion(1, 0, 0, 0);
+const ROCKET_NOSE_BODY: Vec3 = new Vec3(1, 0, 0);
 
 /**
  * Converts a quaternion to roll, pitch, and yaw angles. The
@@ -27,6 +27,19 @@ export function convertQuaternionToRPYAngles(quaternion: Quaternion): RPYAngles 
 }
 
 /**
+ * Computes the result of rotating the given vector by the given quaternion.
+ *
+ * @param vector
+ * @param rotation
+ * @return {Vec3}
+ */
+export function rotate(vector: Vec3, rotation: Quaternion): Vec3 {
+    const v: Quaternion = new Quaternion(vector.x, vector.y, vector.z, 0);
+    const vRot: Quaternion = rotation.mult(v).mult(rotation.inverse());
+    return new Vec3(vRot.x, vRot.y, vRot.z);
+}
+
+/**
  * Returns a vector whose direction is the rocket's nose's direction (thrust direction)
  * in the world frame.
  *
@@ -34,8 +47,7 @@ export function convertQuaternionToRPYAngles(quaternion: Quaternion): RPYAngles 
  * @return {Vec3}
  */
 export function getRocketNoseDirection(rocketsCurrentOrientation: Quaternion): Vec3 {
-    const rocketNoseRotationInWorld: Quaternion = rocketsCurrentOrientation.mult(ROCKET_NOSE_BODY_Q).mult(rocketsCurrentOrientation.inverse());
-    return new Vec3(rocketNoseRotationInWorld.x, rocketNoseRotationInWorld.y, rocketNoseRotationInWorld.z);
+    return rotate(ROCKET_NOSE_BODY, rocketsCurrentOrientation);
 }
 
 /**
