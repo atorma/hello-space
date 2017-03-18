@@ -2,7 +2,7 @@ import {RunPhysics, Controls, WorldState, PlanetState, RocketState} from "./exte
 import {InitialState} from "./external/initialstate";
 import {goToMoon} from "./go_to_moon";
 
-xdescribe('goToMoon()', () => {
+describe('goToMoon()', () => {
 
     let world: WorldState;
     let moon: PlanetState;
@@ -29,15 +29,17 @@ xdescribe('goToMoon()', () => {
     });
 
     it('drives to rocket to the moon', () => {
-        for (let i = 0; i < 500 && !world.rocket.exploded; i++) {
+        const initialFuel: number = rocket.fuel.volume;
+
+        for (let i = 0; i < 5000 && !world.rocket.exploded; i++) {
             const controls: Controls = goToMoon(world);
             world = RunPhysics(world, controls);
             updateStates();
-            console.log('Moon', distanceToMoon, 'Earth', distanceToEarth);
         }
 
-        console.log('Exploded', rocket.exploded);
+        expect(rocket.fuel.volume).toBeGreaterThan(0);
         expect(distanceToMoon).toBeLessThan(moon.radius + 5);
+        console.log('Fuel left: ' + (rocket.fuel.volume / initialFuel * 100) + '%');
     });
 
 });
