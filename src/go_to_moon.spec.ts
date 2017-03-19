@@ -1,6 +1,7 @@
 import {RunPhysics, Controls, WorldState, PlanetState, RocketState} from "./external/physics";
 import {InitialState} from "./external/initialstate";
 import {goToMoon} from "./go_to_moon";
+import Constants = require("./physical_constants");
 
 describe('goToMoon()', () => {
 
@@ -31,14 +32,15 @@ describe('goToMoon()', () => {
     it('drives to rocket to the moon', () => {
         const initialFuel: number = rocket.fuel.volume;
 
-        for (let i = 0; i < 5000 && !world.rocket.exploded; i++) {
+        for (let i = 0; i < 5000 && !world.rocket.exploded && distanceToMoon > 0; i++) {
             const controls: Controls = goToMoon(world);
             world = RunPhysics(world, controls);
             updateStates();
         }
 
+        expect(rocket.exploded).toBe(false);
         expect(rocket.fuel.volume).toBeGreaterThan(0);
-        expect(distanceToMoon).toBeLessThan(moon.radius + 5);
+        expect(distanceToMoon).toBeLessThanOrEqual(Constants.rocketSize[0] / 2);
         console.log('Fuel left: ' + (rocket.fuel.volume / initialFuel * 100) + '%');
     });
 
