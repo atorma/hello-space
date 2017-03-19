@@ -35,19 +35,15 @@ export function goToMoon(worldState: WorldState): Controls {
         return new Controls(liftOffPhase2());
     }
 
-    if (rocketDistanceToMoon >= 50) {
+    if (rocketDistanceToMoon >= 40) {
         return new Controls(travelToMoon());
     }
 
-    if (rocket.fuel.volume > MIN_FUEL_VOLUME) {
+    if (rocketDistanceToMoon >= 15) {
         return new Controls(initiateLanding());
     }
 
-    if (rocketDistanceToMoon < 12) {
-        return new Controls(finalizeLanding());
-    }
-
-    return new Controls({});
+    return new Controls(finalizeLanding());
 }
 
 function updateState(): void {

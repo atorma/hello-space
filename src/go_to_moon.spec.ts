@@ -40,7 +40,9 @@ describe('goToMoon()', () => {
 
         expect(rocket.exploded).toBe(false);
         expect(rocket.fuel.volume).toBeGreaterThan(0);
-        expect(distanceToMoon).toBeLessThanOrEqual(Constants.rocketSize[0] / 2);
+        expect(distanceToMoon).toBeLessThanOrEqual(Constants.rocketSize[0]);
+        console.log('Exploded: ' + rocket.exploded);
+        console.log('Distance to moon: ' + distanceToMoon);
         console.log('Fuel left: ' + (rocket.fuel.volume / initialFuel * 100) + '%');
     });
 
